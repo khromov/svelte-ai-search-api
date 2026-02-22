@@ -10,19 +10,27 @@ A Bun HTTP server that answers questions using AI with tool access from the [Sve
 ./install-bun.sh
 ```
 
-**2. Install dependencies:**
+**2. Configure environment:**
+
+```bash
+cp .env.sample .env
+```
+
+Edit `.env` and set a `SECRET_KEY` value.
+
+**3. Install dependencies:**
 
 ```bash
 bun install
 ```
 
-**3. Authenticate with Vercel** (first time only):
+**4. Authenticate with Vercel** (first time only):
 
 ```bash
 bun run vercel:login
 ```
 
-**4. Link to a Vercel project** (first time only):
+**5. Link to a Vercel project** (first time only):
 
 ```bash
 bun run vercel:link
@@ -43,4 +51,4 @@ Model calls are routed through [Vercel AI Gateway](https://vercel.com/docs/ai-ga
 ## Endpoints
 
 - `GET /_health` — health check
-- `GET /q` — ask a question using AI + Svelte MCP tools
+- `POST /q` — ask a question using AI + Svelte MCP tools; requires `x-secret-key` header and JSON body `{ "question": "..." }`
