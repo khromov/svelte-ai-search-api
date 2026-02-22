@@ -33,7 +33,8 @@ const server = Bun.serve({
         },
         onStepFinish: ({ stepNumber, text, toolResults, finishReason }) => {
           for (const result of toolResults) {
-            console.log(`[tool:result] ${result.toolName}\n`, result.output);
+            const output = String(result.output ?? "").slice(0, 120);
+            console.log(`[tool:result] ${result.toolName}\n`, output);
           }
           if (text) console.log(`[step:text]\n`, text);
           console.log(
