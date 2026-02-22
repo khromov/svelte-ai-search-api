@@ -52,3 +52,58 @@ Model calls are routed through [Vercel AI Gateway](https://vercel.com/docs/ai-ga
 
 - `GET /_health` — health check
 - `POST /q` — ask a question using AI + Svelte MCP tools; requires `x-secret-key` header and JSON body `{ "question": "..." }`
+
+# API
+
+## `POST /q`
+
+Ask a question using AI with access to the [Svelte MCP server](https://mcp.svelte.dev) tools. The model always queries the MCP tools before answering — it never responds from memory alone.
+
+**Request headers:**
+
+| Header         | Required | Description                                      |
+| -------------- | -------- | ------------------------------------------------ |
+| `x-secret-key` | Yes      | Must match the `SECRET_KEY` environment variable |
+| `Content-Type` | Yes      | Must be `application/json`                       |
+
+**Request body:**
+
+```json
+{
+  "question": "How do I use Svelte stores?"
+}
+```
+
+| Field      | Type   | Description            |
+| ---------- | ------ | ---------------------- |
+| `question` | string | The question to answer |
+
+**Response (200):**
+
+```json
+{
+  "text": "...",
+  "steps": 3
+}
+```
+
+| Field   | Type   | Description                            |
+| ------- | ------ | -------------------------------------- |
+| `text`  | string | The AI-generated answer                |
+| `steps` | number | Number of agentic steps taken (max 10) |
+
+**Error responses:**
+
+| Status | Description                                |
+| ------ | ------------------------------------------ |
+| `400`  | Missing or invalid `question` field        |
+| `401`  | Missing or incorrect `x-secret-key` header |
+
+**Example:**
+
+```bash
+curl -X POST http://localhost:3000/q \
+  -H "Content-Type: application/json" \
+  -H "x-secret-key: change-me" \
+  -d '{"question": "How do I use Svelte stores?"}'
+```
