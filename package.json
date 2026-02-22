@@ -8,6 +8,7 @@
   },
   "scripts": {
     "start": "bun run vercel:env:pull && bun --watch ./index.ts",
+    "vercel:login": "vercel login",
     "vercel:link": "vercel link",
     "vercel:env:pull": "vercel env pull .env.local --yes"
   },
