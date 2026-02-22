@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Q Demo</title>
+  <style>
+    body { font-family: monospace; max-width: 800px; margin: 40px auto; padding: 0 20px; }
+    textarea { width: 100%; height: 120px; font-family: monospace; font-size: 14px; padding: 8px; box-sizing: border-box; }
+    button { margin-top: 8px; padding: 8px 16px; font-size: 14px; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    #result { margin-top: 24px; }
+    #result pre { background: #f4f4f4; padding: 16px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    #status { margin-top: 8px; color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Q Demo</h1>
+  <form id="form">
+    <textarea id="question" placeholder="Enter your question..." required></textarea>
+    <br>
+    <button type="submit" id="submit">Submit</button>
+    <span id="status"></span>
+  </form>
+  <div id="result"></div>
+
+  <script>
+    const form = document.getElementById('form');
+    const questionEl = document.getElementById('question');
+    const submitBtn = document.getElementById('submit');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const question = questionEl.value.trim();
+      if (!question) return;
+
+      submitBtn.disabled = true;
+      statusEl.textContent = 'Loading...';
+      resultEl.innerHTML = '';
+
+      try {
+        const res = await fetch('/q-demo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question }),
+        });
+        const data = await res.json();
+        resultEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        statusEl.textContent = res.ok ? `Done (${data.steps} step${data.steps !== 1 ? 's' : ''})` : 'Error';
+      } catch (err) {
+        resultEl.innerHTML = `<pre>Error: ${err.message}</pre>`;
+        statusEl.textContent = 'Failed';
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
