@@ -1,5 +1,5 @@
-import { generateText } from "ai";
-import { experimental_createMCPClient as createMCPClient } from "ai/mcp";
+import { generateText, stepCountIs } from "ai";
+import { createMCPClient } from "@ai-sdk/mcp";
 import { gateway } from "ai";
 
 const server = Bun.serve({
@@ -21,12 +21,12 @@ const server = Bun.serve({
         const result = await generateText({
             model,
             tools: await mcpClient.tools(),
-            maxSteps: 10,
+            stopWhen: stepCountIs(10),
             prompt: question,
         });
 
 
-        return new Response("OK");
+        return Response.json({ text: result.text, steps: result.steps.length });
     },
   },
   // fallback for unmatched routes:

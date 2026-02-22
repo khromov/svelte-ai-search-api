@@ -7,12 +7,16 @@
     "@types/bun": "latest"
   },
   "scripts": {
-    "dev": "bun --watch index.ts"
+    "start": "bun run vercel:env:pull && bun --watch ./index.ts",
+    "vercel:link": "vercel link",
+    "vercel:env:pull": "vercel env pull .env.local --yes"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "ai": "^6.0.97"
+    "@ai-sdk/mcp": "^1.0.21",
+    "ai": "^6.0.97",
+    "vercel": "^50.22.1"
   }
 }
