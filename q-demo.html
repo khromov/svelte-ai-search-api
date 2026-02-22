@@ -38,6 +38,11 @@
     const statusEl = document.getElementById('status');
     const resultEl = document.getElementById('result');
 
+    secretEl.value = localStorage.getItem('q-demo-secret') || '';
+    secretEl.addEventListener('input', () => {
+      localStorage.setItem('q-demo-secret', secretEl.value);
+    });
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const question = questionEl.value.trim();
