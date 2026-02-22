@@ -1,6 +1,8 @@
 const server = Bun.serve({
   routes: {
-    "/_health": new Response("OK"),
+    "/_health": (req) => {
+      return new Response("OK");
+    },
   },
   // fallback for unmatched routes:
   fetch(req) {
