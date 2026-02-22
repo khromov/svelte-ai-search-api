@@ -29,16 +29,20 @@ const server = Bun.serve({
           console.log(`[step:start] step=${stepNumber}`);
         },
         experimental_onToolCallStart: ({ toolCall }) => {
-          console.log(`[tool:start] ${toolCall.toolName}`, toolCall.input);
+          console.log(`[tool:start] ${toolCall.toolName}\n`, toolCall.input);
         },
-        onStepFinish: ({ stepNumber, text, toolCalls, finishReason }) => {
+        onStepFinish: ({ stepNumber, text, toolResults, finishReason }) => {
+          for (const result of toolResults) {
+            console.log(`[tool:result] ${result.toolName}\n`, result.output);
+          }
+          if (text) console.log(`[step:text]\n`, text);
           console.log(
-            `[step:finish] step=${stepNumber} finishReason=${finishReason} toolCalls=${toolCalls.length} text=${text.length}chars`,
+            `[step:finish] step=${stepNumber} finishReason=${finishReason} toolResults=${toolResults.length}`,
           );
         },
-        onFinish: ({ text, steps, finishReason, usage }) => {
+        onFinish: ({ steps, finishReason, usage }) => {
           console.log(
-            `[finish] finishReason=${finishReason} steps=${steps.length} tokens=${usage.totalTokens} text=${text.length}chars`,
+            `[finish] finishReason=${finishReason} steps=${steps.length} tokens=${usage.totalTokens}`,
           );
         },
       });
