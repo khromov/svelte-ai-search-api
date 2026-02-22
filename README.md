@@ -5,6 +5,7 @@ A Bun HTTP server that answers questions using AI with tool access from the [Sve
 ## TODO
 
 - [ ] Fine tune the prompts
+- [ ] Remove unused tools
 - [ ] Deploy on Vercel https://bun.com/docs/guides/deployment/vercel
 
 ## Setup
