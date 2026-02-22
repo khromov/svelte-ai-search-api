@@ -2,6 +2,11 @@
 
 A Bun HTTP server that answers questions using AI with tool access from the [Svelte MCP server](https://mcp.svelte.dev). Uses the [Vercel AI SDK](https://ai-sdk.dev/) with [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) for model routing.
 
+## TODO
+
+- [ ] Fine tune the prompts
+- [ ] Deploy on Vercel https://bun.com/docs/guides/deployment/vercel
+
 ## Setup
 
 **1. Install Bun** (pins the version from `.bunversion`):
