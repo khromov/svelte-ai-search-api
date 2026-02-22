@@ -5,7 +5,8 @@ A Bun HTTP server that answers questions using AI with tool access from the [Sve
 ## TODO
 
 - [ ] Fine tune the prompts
-- [ ] Remove unused tools
+- [x] Remove unused tools
+- [ ] Better source attribution (answers should include a list of links to where it got information, might require MCP changes or maybe just "smart" url manipulation)
 - [ ] Deploy on Vercel https://bun.com/docs/guides/deployment/vercel
 
 ## Setup

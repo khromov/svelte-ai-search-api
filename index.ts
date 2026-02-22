@@ -5,13 +5,21 @@ import { gateway } from "ai";
 const SYSTEM_PROMPT =
   "You MUST use the available MCP tools to look up documentation and run the autofixer. Never answer from memory alone — always call the relevant tools first.";
 
+// Set to null to allow all tools, or an array of tool names to whitelist
+const ALLOWED_TOOLS = [
+  "get-documentation",
+  "list-sections",
+  "svelte-autofixer",
+];
+
+const MCP_URL = "https://mcp.svelte.dev/mcp";
+
+function createClient() {
+  return createMCPClient({ transport: { type: "http", url: MCP_URL } });
+}
+
 async function handleQuestion(question: string) {
-  const mcpClient = await createMCPClient({
-    transport: {
-      type: "http",
-      url: "https://mcp.svelte.dev/mcp",
-    },
-  });
+  const mcpClient = await createClient();
 
   try {
     const promptResult = await mcpClient.experimental_getPrompt({
@@ -31,9 +39,18 @@ async function handleQuestion(question: string) {
 
     const model = gateway.languageModel("anthropic/claude-sonnet-4-6");
 
+    const allTools = await mcpClient.tools();
+    const tools = ALLOWED_TOOLS
+      ? Object.fromEntries(
+          Object.entries(allTools).filter(([name]) =>
+            ALLOWED_TOOLS.includes(name),
+          ),
+        )
+      : allTools;
+
     const result = await generateText({
       model,
-      tools: await mcpClient.tools(),
+      tools,
       stopWhen: stepCountIs(10),
       system: SYSTEM_PROMPT,
       messages,
@@ -67,13 +84,7 @@ async function handleQuestion(question: string) {
 }
 
 async function listPrompts() {
-  const mcpClient = await createMCPClient({
-    transport: {
-      type: "http",
-      url: "https://mcp.svelte.dev/mcp",
-    },
-  });
-
+  const mcpClient = await createClient();
   try {
     const prompts = await mcpClient.experimental_listPrompts();
     return prompts;

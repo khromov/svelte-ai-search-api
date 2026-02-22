@@ -11,8 +11,14 @@
     button:disabled { opacity: 0.5; cursor: not-allowed; }
     #result { margin-top: 24px; }
     #result pre { background: #f4f4f4; padding: 16px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    #result code { background: #f4f4f4; padding: 2px 4px; border-radius: 3px; font-size: 13px; }
+    #result h1, #result h2, #result h3 { font-family: sans-serif; }
+    #result p { font-family: sans-serif; line-height: 1.6; }
+    #result ul, #result ol { font-family: sans-serif; line-height: 1.6; }
+    #result a { color: #0066cc; }
     #status { margin-top: 8px; color: #666; font-size: 13px; }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
   <h1>Q Demo</h1>
@@ -66,7 +72,7 @@
           return;
         }
         const data = await res.json();
-        resultEl.innerHTML = `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+        resultEl.innerHTML = marked.parse(data.text ?? '');
         statusEl.textContent = `Done (${data.steps} step${data.steps !== 1 ? 's' : ''})`;
       } catch (err) {
         resultEl.innerHTML = `<pre>Error: ${err.message}</pre>`;

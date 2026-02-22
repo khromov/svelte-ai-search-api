@@ -1,107 +1,56 @@
-Default to using Bun instead of Node.js.
+# CLAUDE.md
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## APIs
+## Commands
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
-
-## Testing
-
-Use `bun run tsc` to find type issues before you complete a task.
-
-Use `bun test` to run tests.
-
-```ts#index.test.ts
-import { test, expect } from "bun:test";
-
-test("hello world", () => {
-  expect(1).toBe(1);
-});
+```bash
+bun run start          # Pull Vercel env vars and start server with hot reload
+bun run tsc            # Type-check (run before completing any task)
+bun test               # Run tests
+bun run vercel:login   # Authenticate with Vercel (first time)
+bun run vercel:link    # Link to Vercel project (first time)
 ```
 
-## Frontend
+The `start` script runs `vercel env pull .env.local` before launching the server, so Vercel environment variables (including AI Gateway credentials) are always fresh.
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+## Architecture
 
-Server:
+Single-file HTTP server (`index.ts`) using `Bun.serve()` with the following routes:
 
-```ts#index.ts
-import index from "./index.html"
+- `GET /_health` — health check
+- `POST /q` — authenticated AI question endpoint
+- `GET /q-demo` — serves `q-demo.html` demo UI
+- `POST /q-demo` — same as `/q` but with debug logging
 
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
+**Request flow for `/q`:**
+1. Validates `x-secret-key` header against `SECRET_KEY` env var
+2. Creates an MCP client connected to `https://mcp.svelte.dev/mcp`
+3. Fetches a `svelte-task` prompt from the MCP server using `experimental_getPrompt`
+4. Calls `generateText` from the Vercel AI SDK with the MCP tools, routing through Vercel AI Gateway (`gateway.languageModel("anthropic/claude-sonnet-4-6")`)
+5. Returns `{ text, steps }` — answer text and number of agentic steps taken (max 10)
+
+**Key dependencies:**
+- `ai` — Vercel AI SDK (`generateText`, `stepCountIs`, `gateway`)
+- `@ai-sdk/mcp` — MCP client (`createMCPClient`)
+- `vercel` — CLI used only for env management, not deployment runtime
+
+**MCP tool allowlist** (`ALLOWED_TOOLS` in `index.ts`): `get-documentation`, `list-sections`, `svelte-autofixer`. Set to `null` to allow all tools.
+
+## Environment
+
+```bash
+cp .env.sample .env
 ```
 
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
+Required: `SECRET_KEY` — authenticates API requests via `x-secret-key` header.
 
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
+Vercel AI Gateway credentials come from Vercel env vars (pulled via `vercel env pull` in the `start` script). The server uses `idleTimeout: 255` to accommodate slow AI responses.
 
-With the following `frontend.tsx`:
+## Bun conventions
 
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+- Use `bun <file>` not `node` or `ts-node`
+- Use `Bun.serve()` not express
+- Use `Bun.file()` not `node:fs`
+- Bun auto-loads `.env` — don't use dotenv
+- Run `bun run tsc` to catch type errors before finishing
