@@ -2,6 +2,9 @@ import { generateText, stepCountIs } from "ai";
 import { createMCPClient } from "@ai-sdk/mcp";
 import { gateway } from "ai";
 
+const SYSTEM_PROMPT =
+  "You MUST use the available MCP tools to look up documentation and run the autofixer. Never answer from memory alone — always call the relevant tools first.";
+
 async function handleQuestion(question: string) {
   const mcpClient = await createMCPClient({
     transport: {
@@ -32,8 +35,7 @@ async function handleQuestion(question: string) {
     model,
     tools: await mcpClient.tools(),
     stopWhen: stepCountIs(10),
-    system:
-      "You MUST use the available MCP tools to look up documentation and run the autofixer. Never answer from memory alone — always call the relevant tools first.",
+    system: SYSTEM_PROMPT,
     messages,
     experimental_onStepStart: ({ stepNumber }) => {
       console.log(`[step:start] step=${stepNumber}`);
