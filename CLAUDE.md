@@ -1,4 +1,3 @@
-
 Default to using Bun instead of Node.js.
 
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
@@ -20,6 +19,8 @@ Default to using Bun instead of Node.js.
 - Bun.$`ls` instead of execa.
 
 ## Testing
+
+Use `bun run tsc` to find type issues before you complete a task.
 
 Use `bun test` to run tests.
 

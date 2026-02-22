@@ -25,12 +25,28 @@ const server = Bun.serve({
         tools: await mcpClient.tools(),
         stopWhen: stepCountIs(10),
         prompt: question,
+        experimental_onStepStart: ({ stepNumber }) => {
+          console.log(`[step:start] step=${stepNumber}`);
+        },
+        experimental_onToolCallStart: ({ toolCall }) => {
+          console.log(`[tool:start] ${toolCall.toolName}`, toolCall.input);
+        },
+        onStepFinish: ({ stepNumber, text, toolCalls, finishReason }) => {
+          console.log(
+            `[step:finish] step=${stepNumber} finishReason=${finishReason} toolCalls=${toolCalls.length} text=${text.length}chars`,
+          );
+        },
+        onFinish: ({ text, steps, finishReason, usage }) => {
+          console.log(
+            `[finish] finishReason=${finishReason} steps=${steps.length} tokens=${usage.totalTokens} text=${text.length}chars`,
+          );
+        },
       });
 
       return Response.json({ text: result.text, steps: result.steps.length });
     },
   },
-  idleTimeout: 20 * 60, // 20 minutes
+  idleTimeout: 255,
   // fallback for unmatched routes:
   fetch(req) {
     return new Response("Not Found", { status: 404 });

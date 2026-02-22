@@ -4,13 +4,14 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "^1.3.9"
   },
   "scripts": {
     "start": "bun run vercel:env:pull && bun --watch ./index.ts",
     "vercel:login": "vercel login",
     "vercel:link": "vercel link",
-    "vercel:env:pull": "vercel env pull .env.local --yes"
+    "vercel:env:pull": "vercel env pull .env.local --yes",
+    "tsc": "tsc --noEmit"
   },
   "peerDependencies": {
     "typescript": "^5"
