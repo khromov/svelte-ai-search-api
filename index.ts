@@ -10,13 +10,31 @@ async function handleQuestion(question: string) {
     },
   });
 
+  try {
+  const promptResult = await mcpClient.experimental_getPrompt({
+    name: "svelte-task",
+    arguments: { task: question },
+  });
+
+  const messages = promptResult.messages.map((msg) => ({
+    role: msg.role as "user" | "assistant",
+    content: msg.content.type === "text" ? msg.content.text : "",
+  }));
+
+  console.log(`[prompt] messages=${messages.length}`);
+  for (const msg of messages) {
+    console.log(`[prompt:${msg.role}]\n`, msg.content);
+  }
+
   const model = gateway.languageModel("anthropic/claude-sonnet-4-6");
 
   const result = await generateText({
     model,
     tools: await mcpClient.tools(),
     stopWhen: stepCountIs(10),
-    prompt: question,
+    system:
+      "You MUST use the available MCP tools to look up documentation and run the autofixer. Never answer from memory alone — always call the relevant tools first.",
+    messages,
     experimental_onStepStart: ({ stepNumber }) => {
       console.log(`[step:start] step=${stepNumber}`);
     },
@@ -41,12 +59,37 @@ async function handleQuestion(question: string) {
   });
 
   return { text: result.text, steps: result.steps.length };
+  } finally {
+    await mcpClient.close();
+  }
+}
+
+async function listPrompts() {
+  const mcpClient = await createMCPClient({
+    transport: {
+      type: "http",
+      url: "https://mcp.svelte.dev/mcp",
+    },
+  });
+
+  try {
+    const prompts = await mcpClient.experimental_listPrompts();
+    return prompts;
+  } finally {
+    await mcpClient.close();
+  }
 }
 
 const server = Bun.serve({
   routes: {
     "/_health": () => {
       return new Response("OK");
+    },
+    "/prompts": {
+      GET: async () => {
+        const prompts = await listPrompts();
+        return Response.json(prompts);
+      },
     },
     "/q": {
       GET: async () => {
