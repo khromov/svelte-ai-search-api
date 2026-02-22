@@ -1,6 +1,6 @@
 # ai-search-api
 
-A Bun HTTP server that answers questions using AI (via the Vercel AI SDK) with tool access from the [Svelte MCP server](https://mcp.svelte.dev).
+A Bun HTTP server that answers questions using AI with tool access from the [Svelte MCP server](https://mcp.svelte.dev). Uses the [Vercel AI SDK](https://ai-sdk.dev/) with [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) for model routing.
 
 ## Setup
 
@@ -35,6 +35,10 @@ bun run start
 ```
 
 This pulls the latest Vercel env vars and starts the server with hot reload.
+
+## AI Gateway
+
+Model calls are routed through [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) using `gateway.languageModel()` from the Vercel AI SDK. The gateway credentials are pulled automatically from Vercel environment variables via `bun run start` (which runs `vercel env pull` before starting the server).
 
 ## Endpoints
 
