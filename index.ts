@@ -76,6 +76,11 @@ const server = Bun.serve({
     "/q-demo": {
       GET: () => new Response(Bun.file("./q-demo.html")),
       POST: async (req) => {
+        const secretKey = process.env.SECRET_KEY;
+        if (!secretKey || req.headers.get("x-secret-key") !== secretKey) {
+          return new Response("Unauthorized", { status: 401 });
+        }
+
         const body = (await req.json()) as Record<string, unknown>;
         const question = body.question;
         if (!question || typeof question !== "string") {
