@@ -1,15 +1,20 @@
 # ai-search-api
 
-To install dependencies:
+A Bun HTTP server that answers questions using AI (via the Vercel AI SDK) with tool access from the [Svelte MCP server](https://mcp.svelte.dev).
+
+## Setup
 
 ```bash
 bun install
 ```
 
-To run:
+## Run
 
 ```bash
-bun run index.ts
+bun index.ts
 ```
 
-This project was created using `bun init` in bun v1.3.9. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## Endpoints
+
+- `GET /_health` — health check
+- `GET /q` — ask a question using AI + Svelte MCP tools
