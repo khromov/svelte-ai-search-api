@@ -43,7 +43,7 @@ async function handleQuestion(question: string) {
       content: msg.content.type === "text" ? msg.content.text : "",
     }));
 
-    console.log(`[prompt] messages=${messages.length}`);
+    console.log(`[prompt] system=${SYSTEM_PROMPT} messages=${messages.length}`);
     for (const msg of messages) {
       console.log(`[prompt:${msg.role}]\n`, msg.content);
     }
@@ -67,11 +67,15 @@ async function handleQuestion(question: string) {
         description:
           "Submit your final answer to the user. You MUST call get-documentation at least once before using this tool.",
         inputSchema: z.object({
-          answer: z.string().describe("Your final answer in Discord Markdown format."),
+          answer: z
+            .string()
+            .describe("Your final answer in Discord Markdown format."),
         }),
         execute: async ({ answer }) => {
           if (!hasCalledGetDocs) {
-            console.log(`[AnswerQuestion] blocked — get-documentation not yet called`);
+            console.log(
+              `[AnswerQuestion] blocked — get-documentation not yet called`,
+            );
             return "ERROR: You must call get-documentation at least once before answering. Call get-documentation now, then use AnswerQuestion again.";
           }
           return answer;
@@ -87,7 +91,9 @@ async function handleQuestion(question: string) {
         const lastStep = steps.at(-1);
         if (!lastStep) return false;
         const answered = lastStep.toolResults.some(
-          (r) => r.toolName === "AnswerQuestion" && !String(r.output).startsWith("ERROR:"),
+          (r) =>
+            r.toolName === "AnswerQuestion" &&
+            !String(r.output).startsWith("ERROR:"),
         );
         if (answered) return true;
         return steps.length >= 10;
@@ -121,7 +127,11 @@ async function handleQuestion(question: string) {
     // Extract the final answer from the last successful AnswerQuestion tool call
     const answerResult = result.steps
       .flatMap((s) => s.toolResults)
-      .filter((r) => r.toolName === "AnswerQuestion" && !String(r.output).startsWith("ERROR:"))
+      .filter(
+        (r) =>
+          r.toolName === "AnswerQuestion" &&
+          !String(r.output).startsWith("ERROR:"),
+      )
       .at(-1);
 
     const text = answerResult ? String(answerResult.output) : result.text;
