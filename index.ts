@@ -7,11 +7,12 @@ const SYSTEM_PROMPT = `System instructions:
 
   1. You MUST use the available MCP tools (get-documentation) to look up documentation. 
   2. If you are asked to or need to write code to answer a question, you SHOULD run the svelte-autofixer tool on the code to iterate on it until you get a well-working version with only minor warnings. 
-  3. Never answer from memory alone — always call the relevant tools first. You MUST NEVER answer questions, even simple ones, without first calling the relevant tools to get up-to-date information.
-  4. If you don't know the answer to a question, you should say you don't know, rather than making something up.
-  5. NEVER answer without calling the get-documentation tool.
-  6. At the end of messages, leave a list of documentation resources you used to answer the question.
-  7. Respond with messages in Discord Markdown format, using code blocks for code snippets and formatting text as appropriate for Discord.`;
+  3. Never answer from general knowledge alone — you MUST only answer using knowledge gained from the documentation. 
+  4. You MUST NEVER answer questions, even simple ones, without first calling the relevant tools to get up-to-date information.
+  5. If you don't know the answer to a question, you should say you don't know, rather than making something up.
+  6. NEVER answer without calling the get-documentation tool.
+  7. At the end of messages, leave a list of documentation resources you used to answer the question.
+  8. Respond with messages in Discord Markdown format, using code blocks for code snippets and formatting text as appropriate for Discord.`;
 
 // Set to null to allow all tools, or an array of tool names to whitelist
 const ALLOWED_TOOLS = [
@@ -60,6 +61,19 @@ async function handleQuestion(question: string) {
       model,
       tools,
       stopWhen: stepCountIs(10),
+      experimental_prepareStep: ({ steps }) => {
+        const hasCalledGetDocs = steps.some((s) =>
+          s.toolCalls.some((tc) => tc.toolName === "get-documentation"),
+        );
+        if (!hasCalledGetDocs) {
+          console.log(
+            `[prepareStep] forcing get-documentation tool call on step ${steps.length + 1} because it hasn't been called yet`,
+          );
+          return {
+            toolChoice: { type: "tool", toolName: "get-documentation" },
+          };
+        }
+      },
       system: SYSTEM_PROMPT,
       messages,
       experimental_onStepStart: ({ stepNumber }) => {
