@@ -1,18 +1,20 @@
-import { generateText, stepCountIs } from "ai";
+import { generateText, tool } from "ai";
 import { createMCPClient } from "@ai-sdk/mcp";
 import { gateway } from "ai";
+import { z } from "zod";
 
-const SYSTEM_PROMPT = `System instructions: 
+const SYSTEM_PROMPT = `System instructions:
   You are a Discord bot that answers questions about Svelte development in the official Svelte Discord server. You have access to the official Svelte documentation and can use it to answer questions.
 
-  1. You MUST use the available MCP tools (get-documentation) to look up documentation. 
-  2. If you are asked to or need to write code to answer a question, you SHOULD run the svelte-autofixer tool on the code to iterate on it until you get a well-working version with only minor warnings. 
-  3. Never answer from general knowledge alone — you MUST only answer using knowledge gained from the documentation. 
+  1. You MUST use the available MCP tools (get-documentation) to look up documentation.
+  2. If you are asked to or need to write code to answer a question, you SHOULD run the svelte-autofixer tool on the code to iterate on it until you get a well-working version with only minor warnings.
+  3. Never answer from general knowledge alone — you MUST only answer using knowledge gained from the documentation.
   4. You MUST NEVER answer questions, even simple ones, without first calling the relevant tools to get up-to-date information.
   5. If you don't know the answer to a question, you should say you don't know, rather than making something up.
   6. NEVER answer without calling the get-documentation tool.
   7. At the end of messages, leave a list of documentation resources you used to answer the question.
-  8. Respond with messages in Discord Markdown format, using code blocks for code snippets and formatting text as appropriate for Discord.`;
+  8. Respond with messages in Discord Markdown format, using code blocks for code snippets and formatting text as appropriate for Discord.
+  9. You MUST use the AnswerQuestion tool to submit your final answer. Do not respond with plain text.`;
 
 // Set to null to allow all tools, or an array of tool names to whitelist
 const ALLOWED_TOOLS = [
@@ -49,7 +51,7 @@ async function handleQuestion(question: string) {
     const model = gateway.languageModel("anthropic/claude-sonnet-4-6");
 
     const allTools = await mcpClient.tools();
-    const tools = ALLOWED_TOOLS
+    const mcpTools = ALLOWED_TOOLS
       ? Object.fromEntries(
           Object.entries(allTools).filter(([name]) =>
             ALLOWED_TOOLS.includes(name),
@@ -57,22 +59,38 @@ async function handleQuestion(question: string) {
         )
       : allTools;
 
+    let hasCalledGetDocs = false;
+
+    const tools = {
+      ...mcpTools,
+      AnswerQuestion: tool({
+        description:
+          "Submit your final answer to the user. You MUST call get-documentation at least once before using this tool.",
+        inputSchema: z.object({
+          answer: z.string().describe("Your final answer in Discord Markdown format."),
+        }),
+        execute: async ({ answer }) => {
+          if (!hasCalledGetDocs) {
+            console.log(`[AnswerQuestion] blocked — get-documentation not yet called`);
+            return "ERROR: You must call get-documentation at least once before answering. Call get-documentation now, then use AnswerQuestion again.";
+          }
+          return answer;
+        },
+      }),
+    };
+
     const result = await generateText({
       model,
       tools,
-      stopWhen: stepCountIs(10),
-      experimental_prepareStep: ({ steps }) => {
-        const hasCalledGetDocs = steps.some((s) =>
-          s.toolCalls.some((tc) => tc.toolName === "get-documentation"),
+      toolChoice: "required",
+      stopWhen: ({ steps }) => {
+        const lastStep = steps.at(-1);
+        if (!lastStep) return false;
+        const answered = lastStep.toolResults.some(
+          (r) => r.toolName === "AnswerQuestion" && !String(r.output).startsWith("ERROR:"),
         );
-        if (!hasCalledGetDocs) {
-          console.log(
-            `[prepareStep] forcing get-documentation tool call on step ${steps.length + 1} because it hasn't been called yet`,
-          );
-          return {
-            toolChoice: { type: "tool", toolName: "get-documentation" },
-          };
-        }
+        if (answered) return true;
+        return steps.length >= 10;
       },
       system: SYSTEM_PROMPT,
       messages,
@@ -83,9 +101,10 @@ async function handleQuestion(question: string) {
         console.log(`[tool:start] ${toolCall.toolName}\n`, toolCall.input);
       },
       onStepFinish: ({ stepNumber, text, toolResults, finishReason }) => {
-        for (const result of toolResults) {
-          const output = String(result.output ?? "").slice(0, 120);
-          console.log(`[tool:result] ${result.toolName}\n`, output);
+        for (const r of toolResults) {
+          if (r.toolName === "get-documentation") hasCalledGetDocs = true;
+          const output = String(r.output ?? "").slice(0, 120);
+          console.log(`[tool:result] ${r.toolName}\n`, output);
         }
         if (text) console.log(`[step:text]\n`, text);
         console.log(
@@ -99,7 +118,15 @@ async function handleQuestion(question: string) {
       },
     });
 
-    return { text: result.text, steps: result.steps.length };
+    // Extract the final answer from the last successful AnswerQuestion tool call
+    const answerResult = result.steps
+      .flatMap((s) => s.toolResults)
+      .filter((r) => r.toolName === "AnswerQuestion" && !String(r.output).startsWith("ERROR:"))
+      .at(-1);
+
+    const text = answerResult ? String(answerResult.output) : result.text;
+
+    return { text, steps: result.steps.length };
   } finally {
     await mcpClient.close();
   }
