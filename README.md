@@ -8,6 +8,7 @@ A Bun HTTP server that answers questions using AI with tool access from the [Sve
 - [x] Remove unused tools
 - [ ] Better source attribution (answers should include a list of links to where it got information, might require MCP changes or maybe just "smart" url manipulation)
 - [ ] Deploy on Vercel https://bun.com/docs/guides/deployment/vercel
+- [ ] Responses should be less than 2000 characters - make a loop that asks agent to shorten if too long
 
 ## Setup
 
