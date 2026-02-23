@@ -120,6 +120,7 @@ const server = Bun.serve({
     "/_health": () => {
       return new Response("OK");
     },
+    "/marked.min.js": () => new Response(Bun.file("./marked.min.js")),
     "/q": {
       GET: async () => {
         return new Response(
